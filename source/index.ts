@@ -16,7 +16,7 @@ const fs = require('fs')
 const path = require('path')
 import DraftLog from 'draftlog';
 import archiver from 'archiver';
-import { NodeSSH } from "node-ssh";
+import { NodeSSH, Config } from "node-ssh";
 import { exit } from 'process';
 import chalk from 'chalk'
 
@@ -24,7 +24,7 @@ DraftLog(console)
 
 const ssh = new NodeSSH();
 
-type Options = {
+type Options = Config & {
   /* 本地打包路径 */
   distPath?: string,
   /* 服务器部署路径 */
@@ -35,7 +35,7 @@ type Options = {
   zipFileame?: string
 }
 
-let defaultOptions: Options = {
+let defaultOptions = {
   /* 本地打包路径 */
   distPath: "./dist",
   /* 服务器部署路径 */
@@ -50,7 +50,7 @@ let userOptions: Options = {};
 
 // 压缩文件
 async function compressZip() {
-  const output = fs.createWriteStream(__dirname + '/' + userOptions.zipFileame);
+  const output = fs.createWriteStream('./' + userOptions.zipFileame);
   const archive = archiver('zip', {
     zlib: { level: 9 } // Sets the compression level.
   });
@@ -82,29 +82,44 @@ async function compressZip() {
 // 上传压缩文件
 async function uploadZip() {
   let endLoaing = loadingLog('上传打包文件到远程')
-  await ssh.putFile(userOptions.zipFileame!, `/data/www/test/${userOptions.zipFileame}`)
-  endLoaing()
+  try {
+    await ssh.putFile(userOptions.zipFileame!, `/data/www/test/${userOptions.zipFileame}`)
+    endLoaing()
+  } catch (e) {
+    console.log(e);
+    endLoaing(false)
+  }
 }
 
 // 移除服务器上原有文件
 async function cleanServerDir() {
   let endLoaing = loadingLog('删除远程源文件')
-  // 进入远程部署目录
-  ssh.execCommand(`cd ${defaultOptions.serverPath}`, { cwd: defaultOptions.serverPath });
-  // 删除除了node_modules外的文件
-  ssh.execCommand(`rm \`find ./* |egrep -v 'node_modules'\` -rf`, { cwd: defaultOptions.serverPath });
+  try {
+    // 进入远程部署目录
+    await ssh.execCommand(`cd ${defaultOptions.serverPath}`, { cwd: defaultOptions.serverPath });
+    // 删除除了node_modules外的文件
+    await ssh.execCommand(`rm \`find ./* |egrep -v 'node_modules'\` -rf`, { cwd: defaultOptions.serverPath });
+  } catch (e) {
+    console.log(e)
+    endLoaing(false);
+  }
   endLoaing()
 }
 
 async function uncompressZip() {
 
   let endLoaing = loadingLog('解压远程压缩文件及删除')
-  // 进入远程部署目录
-  ssh.execCommand(`cd ${defaultOptions.serverPath}`, { cwd: defaultOptions.serverPath });
-  // 解压压缩文件
-  ssh.execCommand(`unzip -o ${userOptions.zipFileame} -d .`, { cwd: defaultOptions.serverPath });
-  // 删除压缩文件
-  ssh.execCommand(`rm ${userOptions.zipFileame}`, { cwd: defaultOptions.serverPath });
+  try {
+    // 进入远程部署目录
+    await ssh.execCommand(`cd ${defaultOptions.serverPath}`, { cwd: defaultOptions.serverPath });
+    // 解压压缩文件
+    await ssh.execCommand(`unzip -o ${userOptions.zipFileame} -d .`, { cwd: defaultOptions.serverPath });
+    // 删除压缩文件
+    await ssh.execCommand(`rm ${userOptions.zipFileame}`, { cwd: defaultOptions.serverPath });
+  } catch (e) {
+    console.log(e);
+    endLoaing(false);
+  }
   endLoaing();
 }
 
@@ -115,8 +130,7 @@ const deleteLocalZip = async () => {
     fs.unlink(userOptions.zipFileame, (err: any) => {
       if (err) {
         console.log(err);
-        console.log("删除本地zip失败");
-        process.exit(1);
+        endLoaing(false)
       }
 
       endLoaing();
@@ -130,7 +144,12 @@ async function installPackage() {
   // 进入远程部署目录
   ssh.execCommand(`cd ${defaultOptions.serverPath}`, { cwd: defaultOptions.serverPath });
   // package npm 安装
-  await ssh.execCommand(`npm i`, { cwd: defaultOptions.serverPath });
+  try {
+    await ssh.execCommand(`npm i`, { cwd: defaultOptions.serverPath });
+  } catch (e) {
+    console.log(e);
+    endLoaing(false);
+  }
   endLoaing();
 }
 
@@ -152,6 +171,8 @@ function loadingLog(str: string) {
       update(chalk.green(`[√] ${str} `) + chalk.whiteBright(formatNs(endTimestamp - startTimestamp)));
     } else {
       update(chalk.red(`[×] ${str}`));
+      // 退出程序
+      exit(1);
     }
   }
 }
@@ -173,23 +194,32 @@ function formatNs(nsTime: any) {
 }
 
 export default function deploy(options: Options) {
-  userOptions = Object.assign({}, defaultOptions, options);
+  let {
+    distPath,
+    serverPath,
+    installNpmPackage,
+    zipFileame,
+    ...sshOptions
+  } = options;
+
+  userOptions = {
+    distPath: distPath || defaultOptions.distPath,
+    serverPath: serverPath || defaultOptions.serverPath,
+    installNpmPackage: installNpmPackage || defaultOptions.installNpmPackage,
+    zipFileame: zipFileame || defaultOptions.zipFileame
+  };
 
   console.log(chalk.blueBright("开始部署 >>>"))
 
-  let sshLoading = loadingLog("ssh连接服务器成功");
+  let sshLoading = loadingLog("ssh连接服务器");
 
-  ssh.connect({
-    host: '8.134.82.20',
-    username: 'root',
-    password: 'GUOHXa!3579'
-  }).then(async function () {
+  ssh.connect(sshOptions).then(async function () {
     sshLoading();
-    cleanServerDir();
+    await cleanServerDir();
     await compressZip();
     await uploadZip();
     await deleteLocalZip();
-    uncompressZip();
+    await uncompressZip();
     if (defaultOptions.installNpmPackage) {
       await installPackage();
     }
@@ -197,6 +227,9 @@ export default function deploy(options: Options) {
     ssh.dispose(); //断开连接
 
     console.log(chalk.blueBright("<<< 结束部署"));
+  }).catch(e => {
+    console.log(e)
+    sshLoading(false);
   })
 }
 

@@ -1,9 +1,11 @@
-type Options = {
+import { Config } from 'node-ssh';
+
+declare type Options = Config & {
     distPath?: string;
     serverPath?: string;
     installNpmPackage?: boolean;
     zipFileame?: string;
 };
-export default function deploy(options: Options): void;
+declare function deploy(options: Options): void;
 
-//# sourceMappingURL=types.d.ts.map
+export { deploy as default };

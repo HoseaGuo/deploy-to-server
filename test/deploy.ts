@@ -1,3 +1,7 @@
-import deploy from "..";
+import deploy from "../source";
 
-deploy({});
+deploy({
+  host: '8.134.82.20',
+  username: 'root',
+  // password: 'GUOHXa!3579'
+});
