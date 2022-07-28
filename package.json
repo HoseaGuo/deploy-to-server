@@ -1,6 +1,6 @@
 {
   "name": "@hoseaguo/deploy",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "source": "source/index.ts",
   "main": "dist/main.js",
   "module": "dist/module.js",
@@ -42,8 +42,7 @@
     "archiver": "^5.3.1",
     "chalk": "^4.0.1",
     "draftlog": "^1.0.13",
-    "node-ssh": "^13.0.0",
-    "tslib": "^2.4.0"
+    "node-ssh": "^13.0.0"
   },
   "repository": {
     "type": "git",

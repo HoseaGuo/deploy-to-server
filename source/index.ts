@@ -46,18 +46,18 @@ let defaultOptions = {
   zipFileame: '_dist.zip'
 }
 
-let userOptions: Options = {};
+let customOptions: Options = {};
 
 // 压缩文件
 async function compressZip() {
-  const output = fs.createWriteStream('./' + userOptions.zipFileame);
+  const output = fs.createWriteStream('./' + customOptions.zipFileame);
   const archive = archiver('zip', {
     zlib: { level: 9 } // Sets the compression level.
   });
 
   archive.pipe(output);
 
-  archive.directory(defaultOptions.distPath!, false);
+  archive.directory(customOptions.distPath!, false);
 
   archive.finalize();
 
@@ -83,7 +83,7 @@ async function compressZip() {
 async function uploadZip() {
   let endLoaing = loadingLog('上传打包文件到远程')
   try {
-    await ssh.putFile(userOptions.zipFileame!, `/data/www/test/${userOptions.zipFileame}`)
+    await ssh.putFile(customOptions.zipFileame!, `/data/www/test/${customOptions.zipFileame}`)
     endLoaing()
   } catch (e) {
     console.log(e);
@@ -96,9 +96,9 @@ async function cleanServerDir() {
   let endLoaing = loadingLog('删除远程源文件')
   try {
     // 进入远程部署目录
-    await ssh.execCommand(`cd ${defaultOptions.serverPath}`, { cwd: defaultOptions.serverPath });
+    await ssh.execCommand(`cd ${customOptions.serverPath}`, { cwd: customOptions.serverPath });
     // 删除除了node_modules外的文件
-    await ssh.execCommand(`rm \`find ./* |egrep -v 'node_modules'\` -rf`, { cwd: defaultOptions.serverPath });
+    await ssh.execCommand(`rm \`find ./* |egrep -v 'node_modules'\` -rf`, { cwd: customOptions.serverPath });
   } catch (e) {
     console.log(e)
     endLoaing(false);
@@ -111,11 +111,11 @@ async function uncompressZip() {
   let endLoaing = loadingLog('解压远程压缩文件及删除')
   try {
     // 进入远程部署目录
-    await ssh.execCommand(`cd ${defaultOptions.serverPath}`, { cwd: defaultOptions.serverPath });
+    await ssh.execCommand(`cd ${customOptions.serverPath}`, { cwd: customOptions.serverPath });
     // 解压压缩文件
-    await ssh.execCommand(`unzip -o ${userOptions.zipFileame} -d .`, { cwd: defaultOptions.serverPath });
+    await ssh.execCommand(`unzip -o ${customOptions.zipFileame} -d .`, { cwd: customOptions.serverPath });
     // 删除压缩文件
-    await ssh.execCommand(`rm ${userOptions.zipFileame}`, { cwd: defaultOptions.serverPath });
+    await ssh.execCommand(`rm ${customOptions.zipFileame}`, { cwd: customOptions.serverPath });
   } catch (e) {
     console.log(e);
     endLoaing(false);
@@ -127,7 +127,7 @@ async function uncompressZip() {
 const deleteLocalZip = async () => {
   return new Promise((resolve, reject) => {
     let endLoaing = loadingLog('删除本地zip包')
-    fs.unlink(userOptions.zipFileame, (err: any) => {
+    fs.unlink(customOptions.zipFileame, (err: any) => {
       if (err) {
         console.log(err);
         endLoaing(false)
@@ -142,10 +142,10 @@ const deleteLocalZip = async () => {
 async function installPackage() {
   let endLoaing = loadingLog('远程安装npm包')
   // 进入远程部署目录
-  ssh.execCommand(`cd ${defaultOptions.serverPath}`, { cwd: defaultOptions.serverPath });
+  ssh.execCommand(`cd ${customOptions.serverPath}`, { cwd: customOptions.serverPath });
   // package npm 安装
   try {
-    await ssh.execCommand(`npm i`, { cwd: defaultOptions.serverPath });
+    await ssh.execCommand(`npm i`, { cwd: customOptions.serverPath });
   } catch (e) {
     console.log(e);
     endLoaing(false);
@@ -202,7 +202,7 @@ export default function deploy(options: Options) {
     ...sshOptions
   } = options;
 
-  userOptions = {
+  customOptions = {
     distPath: distPath || defaultOptions.distPath,
     serverPath: serverPath || defaultOptions.serverPath,
     installNpmPackage: installNpmPackage || defaultOptions.installNpmPackage,
@@ -221,7 +221,7 @@ export default function deploy(options: Options) {
     await uploadZip();
     await deleteLocalZip();
     await uncompressZip();
-    if (defaultOptions.installNpmPackage) {
+    if (customOptions.installNpmPackage) {
       await installPackage();
     }
 
