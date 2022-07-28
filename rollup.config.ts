@@ -1,7 +1,6 @@
 
 import tsPlugin from '@rollup/plugin-typescript';
-import commonjs from '@rollup/plugin-commonjs';
-import { nodeResolve } from '@rollup/plugin-node-resolve';
+import { terser } from 'rollup-plugin-terser';
 import pkg from './package.json';
 import dts from 'rollup-plugin-dts';
 import { defineConfig } from 'rollup'
@@ -13,10 +12,12 @@ export default defineConfig([
       {
         file: pkg.main,
         format: 'cjs',
+        minifyInternalExports: true
       },
       {
         file: pkg.module,
         format: 'es',
+        minifyInternalExports: true
       },
       // {
       //   format: 'umd',
@@ -26,6 +27,7 @@ export default defineConfig([
     ],
     plugins: [
       tsPlugin(),
+      terser()
       // nodeResolve(),
       // commonjs()
     ],
