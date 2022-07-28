@@ -168,7 +168,7 @@ function loadingLog(str: string) {
     if (isSuccess) {
       let endTimestamp = process.hrtime.bigint();
 
-      update(chalk.green(`[√] ${str} `) + chalk.whiteBright(formatNs(endTimestamp - startTimestamp)));
+      update(chalk.rgb(92, 175, 158)(`[√] ${str} `) + chalk.whiteBright(formatNs(endTimestamp - startTimestamp)));
     } else {
       update(chalk.red(`[×] ${str}`));
       // 退出程序
@@ -209,7 +209,8 @@ export default function deploy(options: Options) {
     zipFileame: zipFileame || defaultOptions.zipFileame
   };
 
-  console.log(chalk.blueBright("开始部署 >>>"))
+  let startDeployTimestamp = process.hrtime.bigint();
+  console.log(chalk.rgb(25, 181, 255)("开始部署>>>"))
 
   let sshLoading = loadingLog("ssh连接服务器");
 
@@ -225,8 +226,9 @@ export default function deploy(options: Options) {
     }
 
     ssh.dispose(); //断开连接
-
-    console.log(chalk.blueBright("<<< 结束部署"));
+    let endDeployTimestamp = process.hrtime.bigint();
+    console.log(chalk.rgb(25, 181, 255)("<<<结束部署"));
+    console.log(chalk.rgb(255, 189, 75)('Total time: ' + formatNs(endDeployTimestamp - startDeployTimestamp)))
   }).catch(e => {
     console.log(e)
     sshLoading(false);

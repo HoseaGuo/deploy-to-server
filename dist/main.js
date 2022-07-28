@@ -288,7 +288,7 @@ function loadingLog(str) {
         clearInterval(timer);
         if (isSuccess) {
             var endTimestamp = process.hrtime.bigint();
-            update(chalk__default["default"].green("[\u221A] ".concat(str, " ")) + chalk__default["default"].whiteBright(formatNs(endTimestamp - startTimestamp)));
+            update(chalk__default["default"].rgb(92, 175, 158)("[\u221A] ".concat(str, " ")) + chalk__default["default"].whiteBright(formatNs(endTimestamp - startTimestamp)));
         }
         else {
             update(chalk__default["default"].red("[\u00D7] ".concat(str)));
@@ -323,10 +323,12 @@ function deploy(options) {
         installNpmPackage: installNpmPackage || defaultOptions.installNpmPackage,
         zipFileame: zipFileame || defaultOptions.zipFileame
     };
-    console.log(chalk__default["default"].blueBright("开始部署 >>>"));
+    var startDeployTimestamp = process.hrtime.bigint();
+    console.log(chalk__default["default"].rgb(25, 181, 255)("开始部署>>>"));
     var sshLoading = loadingLog("ssh连接服务器");
     ssh.connect(sshOptions).then(function () {
         return __awaiter(this, void 0, void 0, function () {
+            var endDeployTimestamp;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -352,7 +354,9 @@ function deploy(options) {
                         _a.label = 7;
                     case 7:
                         ssh.dispose(); //断开连接
-                        console.log(chalk__default["default"].blueBright("<<< 结束部署"));
+                        endDeployTimestamp = process.hrtime.bigint();
+                        console.log(chalk__default["default"].rgb(25, 181, 255)("<<<结束部署"));
+                        console.log(chalk__default["default"].rgb(255, 189, 75)('Total time: ' + formatNs(endDeployTimestamp - startDeployTimestamp)));
                         return [2 /*return*/];
                 }
             });
