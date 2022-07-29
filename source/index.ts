@@ -83,7 +83,7 @@ async function compressZip() {
 async function uploadZip() {
   let endLoaing = loadingLog('上传打包文件到远程')
   try {
-    await ssh.putFile(customOptions.zipFileame!, `/data/www/test/${customOptions.zipFileame}`)
+    await ssh.putFile(customOptions.zipFileame!, `${customOptions.serverPath}/${customOptions.zipFileame}`)
     endLoaing()
   } catch (e) {
     console.log(e);
@@ -98,6 +98,7 @@ async function cleanServerDir() {
     // 进入远程部署目录
     await ssh.execCommand(`cd ${customOptions.serverPath}`, { cwd: customOptions.serverPath });
     // 删除除了node_modules外的文件
+    // TODO: 文件删除排除 可以配置
     await ssh.execCommand(`rm \`find ./* |egrep -v 'node_modules'\` -rf`, { cwd: customOptions.serverPath });
   } catch (e) {
     console.log(e)
