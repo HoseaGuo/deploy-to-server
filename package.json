@@ -1,6 +1,6 @@
 {
   "name": "@hoseaguo/deploy",
-  "version": "1.0.15",
+  "version": "1.0.16",
   "source": "source/index.ts",
   "main": "dist/main.js",
   "module": "dist/module.js",
