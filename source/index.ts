@@ -206,7 +206,7 @@ export default function deploy(options: Options) {
   customOptions = {
     distPath: distPath || defaultOptions.distPath,
     serverPath: serverPath || defaultOptions.serverPath,
-    installNpmPackage: installNpmPackage || defaultOptions.installNpmPackage,
+    installNpmPackage: installNpmPackage !== undefined ? installNpmPackage : defaultOptions.installNpmPackage,
     zipFileame: zipFileame || defaultOptions.zipFileame
   };
 
