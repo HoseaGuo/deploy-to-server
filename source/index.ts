@@ -24,7 +24,7 @@ DraftLog(console)
 
 const ssh = new NodeSSH();
 
-type Options = Config & {
+interface Options extends Config {
   /* 本地打包路径 */
   distPath?: string,
   /* 服务器部署路径 */
@@ -32,7 +32,11 @@ type Options = Config & {
   /* 是否安装npm包 */
   installNpmPackage?: boolean,
   /* 打包文件名 */
-  zipFileame?: string
+  zipFileame?: string,
+  /* 清空文件 排除 */
+  cleanExclude?: string,
+  /* pm2配置文件，假设存在的话，会在部署最后一步，进行 pm2 startOrReload json 配置文件，来重启pm2 服务 */
+  pm2ConfigFileName?: string,
 }
 
 let defaultOptions = {
@@ -43,7 +47,11 @@ let defaultOptions = {
   /* 是否安装npm包 */
   installNpmPackage: true,
   /* 打包文件名 */
-  zipFileame: '_dist.zip'
+  zipFileame: '_dist.zip',
+  /* 清空文件 排除的 正则表达式 字符串， 默认不清空 node_modules 和 json文件 */
+  cleanExclude: "node_modules|.*\.json",
+  /* pm2配置文件，假设存在的话，会在部署最后一步，进行 "pm2 startOrReload 配置文件名"，来重启pm2 服务*/
+  pm2ConfigFileName: ""
 }
 
 let customOptions: Options = {};
@@ -97,9 +105,9 @@ async function cleanServerDir() {
   try {
     // 进入远程部署目录
     await ssh.execCommand(`cd ${customOptions.serverPath}`, { cwd: customOptions.serverPath });
-    // 删除除了node_modules外的文件
-    // TODO: 文件删除排除 可以配置
-    await ssh.execCommand(`rm \`find ./* |egrep -v 'node_modules'\` -rf`, { cwd: customOptions.serverPath });
+    // 排除删除的文件，除了设置的，还会加上pm2 config 文件，假设存在
+    let cleanExclude = [customOptions.pm2ConfigFileName, customOptions.cleanExclude];
+    await ssh.execCommand(`rm \`find ./* |egrep -v '`+ cleanExclude!.join('|') +`'\` -rf`, { cwd: customOptions.serverPath });
   } catch (e) {
     console.log(e)
     endLoaing(false);
@@ -147,6 +155,8 @@ async function installPackage() {
   // package npm 安装
   try {
     await ssh.execCommand(`npm i`, { cwd: customOptions.serverPath });
+    // 试着加1秒延迟
+    await delay(1000);
   } catch (e) {
     console.log(e);
     endLoaing(false);
@@ -194,12 +204,36 @@ function formatNs(nsTime: any) {
   }
 }
 
+async function startOrReloadPm2(){
+  let endLoaing = loadingLog('start or reload pm2 by config file')
+  try {
+    // 进入远程部署目录
+    await ssh.execCommand(`cd ${customOptions.serverPath}`, { cwd: customOptions.serverPath });
+    // 重启pm2配置
+    await ssh.execCommand(`pm2 startOrReload ${customOptions.pm2ConfigFileName}`, { cwd: customOptions.serverPath });
+  } catch (e) {
+    console.log(e);
+    endLoaing(false);
+  }
+  endLoaing();
+}
+
+async function delay(time: number){
+  return new Promise( resolve => {
+    setTimeout( () => {
+      resolve(true)
+    }, time)
+  })
+}
+
 export default function deploy(options: Options) {
   let {
     distPath,
     serverPath,
     installNpmPackage,
     zipFileame,
+    cleanExclude,
+    pm2ConfigFileName,
     ...sshOptions
   } = options;
 
@@ -207,7 +241,9 @@ export default function deploy(options: Options) {
     distPath: distPath || defaultOptions.distPath,
     serverPath: serverPath || defaultOptions.serverPath,
     installNpmPackage: installNpmPackage !== undefined ? installNpmPackage : defaultOptions.installNpmPackage,
-    zipFileame: zipFileame || defaultOptions.zipFileame
+    zipFileame: zipFileame || defaultOptions.zipFileame,
+    cleanExclude: cleanExclude || defaultOptions.cleanExclude,
+    pm2ConfigFileName: pm2ConfigFileName || defaultOptions.pm2ConfigFileName
   };
 
   let startDeployTimestamp = process.hrtime.bigint();
@@ -226,6 +262,10 @@ export default function deploy(options: Options) {
       await installPackage();
     }
 
+    if(customOptions.pm2ConfigFileName){
+      await startOrReloadPm2();
+    }
+
     ssh.dispose(); //断开连接
     let endDeployTimestamp = process.hrtime.bigint();
     console.log(chalk.rgb(25, 181, 255)("<<<结束部署"));
@@ -235,20 +275,3 @@ export default function deploy(options: Options) {
     sshLoading(false);
   })
 }
-
-/* async function buildPackageJson() {
-  try {
-    console.log("构建package.json文件开始");
-    let packageJson = require("./package.json");
-    let newPackageJson = {
-      dependencies: packageJson.dependencies,
-    };
-    fs.writeFileSync("./dist/package.json", JSON.stringify(newPackageJson));
-    console.log("构建package.json文件结束");
-  } catch (e) {
-    console.log(e);
-    console.log("构建package.json文件失败");
-    process.exit(1); //退出流程
-  }
-} */
-
