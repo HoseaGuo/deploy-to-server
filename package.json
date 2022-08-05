@@ -1,6 +1,6 @@
 {
   "name": "@hoseaguo/deploy",
-  "version": "1.0.18",
+  "version": "1.0.19",
   "source": "source/index.ts",
   "main": "dist/main.js",
   "module": "dist/module.js",
@@ -10,9 +10,9 @@
   "description": "deploy project to server with node-ssh npm package",
   "scripts": {
     "test": "ts-node test/deploy.ts",
-    "build": "npx parcel build --no-source-maps",
+    "build:parcel": "npx parcel build --no-source-maps",
     "build:gulp": "gulp",
-    "build:rollup": "rollup --config rollup.config.ts"
+    "build": "rollup --config rollup.config.ts"
   },
   "keywords": [
     "deploy",

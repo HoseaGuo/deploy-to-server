@@ -99,14 +99,14 @@ var defaultOptions = {
     /* 本地打包路径 */
     distPath: "./dist",
     /* 服务器部署路径 */
-    serverPath: "/data/www/test",
+    serverPath: "/data/www/_test",
     /* 是否安装npm包 */
-    installNpmPackage: true,
+    installNpmPackage: false,
     /* 打包文件名 */
     zipFileame: '_dist.zip',
-    /* 清空文件 排除的 正则表达式 字符串， 默认不清空 node_modules 和 json文件 */
+    /* 打包发送到服务器的目录，会清空服务器上文件夹的内容，可以配置清空排除 正则表达式 */
     cleanExclude: "node_modules|.*\.json",
-    /* pm2配置文件，假设存在的话，会在部署最后一步，进行 "pm2 startOrReload 配置文件名"，来重启pm2 服务*/
+    /* pm2配置文件，假设存在的话，会在部署最后一步，进行 "pm2 startOrReload 配置文件名"，来重启pm2 服务 */
     pm2ConfigFileName: ""
 };
 var customOptions = {};
