@@ -35,7 +35,7 @@ interface Options extends Config {
   zipFileame?: string,
   /* 清空文件 排除 */
   cleanExclude?: string,
-  /* pm2配置文件，假设存在的话，会在部署最后一步，进行 pm2 startOrReload json 配置文件，来重启pm2 服务 */
+  /* pm2配置文件，假设存在的话，会在部署最后一步，进行 `pm2 startOrReload pm2进程配置文件名`，来重启pm2 服务 */
   pm2ConfigFileName?: string,
 }
 
@@ -50,7 +50,7 @@ let defaultOptions = {
   zipFileame: '_dist.zip',
   /* 打包发送到服务器的目录，会清空服务器上文件夹的内容，可以配置清空排除 正则表达式 */
   cleanExclude: "node_modules|.*\.json",
-  /* pm2配置文件，假设存在的话，会在部署最后一步，进行 "pm2 startOrReload 配置文件名"，来重启pm2 服务 */
+  /* pm2配置文件，假设存在的话，会在部署最后一步，进行 `pm2 startOrReload pm2进程配置文件名`，来重启pm2 服务 */
   pm2ConfigFileName: ""
 }
 
